@@ -4,12 +4,31 @@
       <router-link to="/">Home</router-link> |
       <router-link to="/about">About</router-link> |
       <router-link to="/login">Login</router-link>
+      <el-button type="info" style="float: right" @click="logout"
+        >Logout</el-button
+      >
       <!--路由佔位符-->
       <!--<router-view></router-view>-->
     </div>
-    <router-view/>
+    <router-view />
   </div>
 </template>
+
+<script>
+export default {
+  methods: {
+    logout () {
+      const tokenStr = window.sessionStorage.getItem('token')
+      if (tokenStr) {
+        // 清空 token
+        window.sessionStorage.clear()
+        // 跳轉到登入頁
+        this.$router.push('/login')
+      }
+    }
+  }
+}
+</script>
 
 <style>
 #app {

@@ -32,4 +32,17 @@ const router = new VueRouter({
   routes
 })
 
+// 掛載路由導航守衛
+router.beforeEach((to, from, next) => {
+  // to 要訪問的路徑
+  // from 代表從哪個路徑跳轉而來
+  // next 是一個表示放行的函數
+  //       next() 放行、next('/login') 強制跳轉
+  if (to.path === '/login') return next()
+  // 獲取 token
+  const tokenStr = window.sessionStorage.getItem('token')
+  if (!tokenStr) return next('/login')
+  next()
+})
+
 export default router
