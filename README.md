@@ -2,8 +2,8 @@
 使用前後端分離開發模式來 Vue 出一個電商
 
 :rocket: Technology <br>
-前端：Vue、Vue-router、Element-UI、Axios、Echarts <br>
-後端：Node.js、Express、Jwt、MySql、Sequelize <br>
+Front end：Vue、Vue-router、Element-UI、Axios、Echarts <br>
+Back end：Node.js、Express、Jwt、MySql、Sequelize <br>
 
 # History
 | Date | Description |
