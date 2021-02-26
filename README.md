@@ -9,6 +9,8 @@ Back end：Node.js、Express、Jwt、MySql、Sequelize <br>
 | Date | Description |
 | -- | -- |
 | 2021/2/24 | 安裝 Vue、通過 Vue 建立專案項目 <br> 添加 Element-UI、axios 類別庫 <br> 安裝 MySQL 資料庫 <br> 安裝 Node.js 環境 |
+| 2021/2/25 | 完成登入頁面 |
+| 2021/2/26 | 製作主頁面框架及設置路由位置 |
 
 # Tree
 - 電商後台管理系統
