@@ -53,91 +53,8 @@ export default {
   data () {
     return {
       // 左側選單
-      menulist: [
-        {
-          id: 150,
-          authName: '用戶管理',
-          path: null,
-          childern: [
-            {
-              id: 151,
-              authName: '用戶列表',
-              path: 'users',
-              childern: []
-            }
-          ]
-        },
-        {
-          id: 130,
-          authName: '權限管理',
-          path: null,
-          childern: [
-            {
-              id: 131,
-              authName: '角色列表',
-              path: 'roles',
-              childern: []
-            },
-            {
-              id: 132,
-              authName: '權限列表',
-              path: 'rights',
-              childern: []
-            }
-          ]
-        },
-        {
-          id: 110,
-          authName: '商品管理',
-          path: null,
-          childern: [
-            {
-              id: 111,
-              authName: '商品列表',
-              path: 'goods',
-              childern: []
-            },
-            {
-              id: 112,
-              authName: '分類參數',
-              path: null,
-              childern: []
-            },
-            {
-              id: 113,
-              authName: '商品分類',
-              path: null,
-              childern: []
-            }
-          ]
-        },
-        {
-          id: 120,
-          authName: '訂單管理',
-          path: null,
-          childern: [
-            {
-              id: 121,
-              authName: '訂單管理',
-              path: 'orders',
-              childern: []
-            }
-          ]
-        },
-        {
-          id: 140,
-          authName: '統計數據',
-          path: null,
-          childern: [
-            {
-              id: 141,
-              authName: '統計數據',
-              path: 'reports',
-              childern: []
-            }
-          ]
-        }
-      ],
+      menulist: [],
+      // 圖標
       iconsObj: {
         150: 'el-icon-user-solid',
         130: 'el-icon-s-tools',
@@ -149,9 +66,9 @@ export default {
       isCollapse: false
     }
   },
-  // created () {
-  //   this.getMenuList()
-  // },
+  created () {
+    this.getMenuList()
+  },
   methods: {
     logout () {
       const tokenStr = window.sessionStorage.getItem('token')
@@ -164,10 +81,21 @@ export default {
     },
     // 取得所有選單
     async getMenuList () {
-      // const { data: res } = await this.$http.get('menu')
-      // if (res.meta.status !== 200) return this.$message.error('res.meta.msg')
-      // this.menulist = res.data
+      // 驗證API資料已取得連線(Fake)
+      const { data: meta } = await this.$http.get('meta', {
+        headers: {
+          'Content-Type': 'application/json, text/plain'
+        }
+      })
+      if (meta.status !== 200) return this.$message.error(meta.msg)
+      // 取得 API 資料
+      const { data: menu } = await this.$http.get('menu', {
+        headers: {
+          'Content-Type': 'application/json, text/plain'
+        }
+      })
       // console.log(res)
+      this.menulist = menu
     },
     // 點擊按鈕，切換選單折疊
     toggleCollapse () {

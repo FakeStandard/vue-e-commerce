@@ -32,7 +32,7 @@
           <!-- <template slot-scope="scope"> -->
           <!--v2.6 語法-->
           <template v-slot="scope">
-            <el-switch v-model="scope.row.mg_state" @change="userStateChanged(scope.row.mg_state)"></el-switch>
+            <el-switch v-model="scope.row.mg_state" @change="userStateChanged(scope.row)"></el-switch>
             <!-- {{scope.row}} -->
           </template>
         </el-table-column>
@@ -76,77 +76,47 @@ export default {
   methods: {
     // 取得所有用戶列表
     async getUserList () {
-      // const { data: res } = await this.$http.get('users', {
-      //   params: this.queryInfo
-      // })
-      // if (res.meta.status !== 200) {
-      //   return this.$message.error('獲取用戶列表失敗！')
-      // }
-
-      // this.userlist = res.data.users
-      this.userlist = [
-        {
-          id: 1,
-          username: 'admin',
-          email: 'admin@vue.com',
-          mobile: '1234567',
-          role_name: '超級管理員',
-          mg_state: true
-        },
-        {
-          id: 2,
-          username: 'user1',
-          email: 'user1@vue.com',
-          mobile: '7654321',
-          role_name: '使用者1',
-          mg_state: false
-        },
-        {
-          id: 3,
-          username: 'user2',
-          email: 'user2@vue.com',
-          mobile: '1597532',
-          role_name: '使用者2',
-          mg_state: true
-        },
-        {
-          id: 4,
-          username: 'user3',
-          email: 'user3@vue.com',
-          mobile: '9513574',
-          role_name: '使用者3',
-          mg_state: true
-        },
-        {
-          id: 5,
-          username: 'user4',
-          email: 'user4@vue.com',
-          mobile: '0000000',
-          role_name: '使用者4',
-          mg_state: false
+      // 驗證 API 資料已取得連線(Fake)
+      const { data: meta } = await this.$http.get('meta', {
+        headers: {
+          'Content-Type': 'application/json, text/plain'
         }
-      ]
-      // this.total = res.data.total
-      this.total = 5
-      // console.log(res)
+      })
+      if (meta.status !== 200) return this.$message.error(meta.msg)
+      // 取得 API 資料
+      const { data: users } = await this.$http.get('users', {
+        params: {
+          username: this.query.length === 0 ? null : this.query
+        },
+        headers: {
+          'Content-Type': 'application/json, text/plain'
+        }
+      })
+      this.userlist = users
+      this.total = users.length
     },
     // 監聽 pagesize 改變事件
     handleSizeChange (newSize) {
-      // console.log(newSize)
       this.pagesize = newSize
       this.getUserList()
     },
     // 監聽 current page 改變事件
     handleCurrentChange (newPage) {
-      // console.log(this.pagenum)
       this.pagenum = newPage
       this.getUserList()
     },
     // 監聽 switch 開關狀態改變事件
     async userStateChanged (userinfo) {
-      // console.log(userinfo)
-      const { data: res } = await this.$http.put(`users/${userinfo.id}/state/${userinfo.mg_state}`)
-      if (res.meta.status !== 200) {
+      await this.$http.patch(`users/${userinfo.id}`, {
+        mg_state: userinfo.mg_state
+      })
+      // 取得 API 更新狀態(Fake)
+      const { data: meta } = await this.$http.get('meta', {
+        headers: {
+          'Content-Type': 'application/json, text/plain'
+        }
+      })
+      if (meta.status !== 200) {
         userinfo.mg_state = !userinfo.mg_state
         return this.$message.error('更新用戶狀態失敗！')
       }
@@ -154,24 +124,8 @@ export default {
     },
     textclick () {
       // 尚未實現模糊查詢
-      console.log(this.query)
-
       if (this.query.length === 0) return this.$message.warning('請輸入要搜尋的內容！')
-      // const items = this.getUserList()
-      // const query = this.query
-      // const result = []
-      // const result = items.filter(item => item.username === query)
-      // items.forEach(element => {
-      //   if (element.username === query) {
-      //     result.push(element)
-      //   }
-      // })
-      // items.forEach(function (item, index, array) {
-      //   if (item.username === query) {
-      //     result.push(item)
-      //   }
-      // })
-      // console.log(result)
+      this.getUserList()
     }
   }
 }
