@@ -17,7 +17,7 @@
           </el-input>
         </el-col>
         <el-col :span="4">
-          <el-button type="primary">添加用戶</el-button>
+          <el-button type="primary" @click="addDialogVisible = true">添加用戶</el-button>
         </el-col>
       </el-row>
       <!--User list region-->
@@ -52,24 +52,47 @@
       </el-pagination>
     </el-card>
 
-    <!--add user dialog-->
-    <!-- <el-dialog
-      title="提示"
-      :visible.sync="dialogVisible"
-      width="30%"
-      :before-close="handleClose">
-      <span>这是一段信息</span>
+    <!--Add user dialog-->
+    <el-dialog title="新增用戶" :visible.sync="addDialogVisible" width="40%" @close="addDialogClosed">
+      <!--Body-->
+      <el-form :model="addForm" :rules="addFormRules" ref="addFormRef" label-width="80px">
+        <el-form-item label="用戶名稱" prop="username">
+          <el-input v-model="addForm.username"></el-input>
+        </el-form-item>
+        <el-form-item label="密碼" prop="password">
+          <el-input v-model="addForm.password" type="password"></el-input>
+        </el-form-item>
+        <el-form-item label="電子郵件" prop="email">
+          <el-input v-model="addForm.email"></el-input>
+        </el-form-item>
+        <el-form-item label="手機號碼" prop="mobile">
+          <el-input v-model="addForm.mobile"></el-input>
+        </el-form-item>
+      </el-form>
+      <!--Footer(button)-->
       <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="dialogVisible = false">确 定</el-button>
+        <el-button type="primary" @click="addUser">確 定</el-button>
+        <el-button @click="addDialogVisible = false">取 消</el-button>
       </span>
-    </el-dialog> -->
+    </el-dialog>
   </div>
 </template>
 
 <script>
 export default {
   data () {
+    // 驗證電子郵件規則
+    var checkEmail = (rule, value, cb) => {
+      const regEmail = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(\.[a-zA-Z0-9_-])+/
+      if (regEmail.test(value)) return cb()
+      cb(new Error('請輸入合法的電子郵件'))
+    }
+    // 驗證手機號碼規則
+    var checkMobile = (rule, value, cb) => {
+      const regMobile = /^[09]{2}[0-9]{8}$/
+      if (regMobile.test(value)) return cb()
+      cb(new Error('請輸入合法的手機號碼'))
+    }
     return {
       // 用戶列表數據
       userlist: [],
@@ -80,7 +103,35 @@ export default {
       // 每頁顯示多少筆資料
       pagesize: 2,
       // 總筆數
-      total: 0
+      total: 0,
+      // 控制添加用戶對話框的顯示與隱藏
+      addDialogVisible: false,
+      // 添加用戶表單的資料
+      addForm: {
+        username: '',
+        password: '',
+        email: '',
+        mobile: ''
+      },
+      // 添加用戶表單的驗證規則
+      addFormRules: {
+        username: [
+          { required: true, message: '請輸入用戶名稱', trigger: 'blur' },
+          { min: 3, max: 10, message: '用戶名稱請輸入 3-10 個字', trigger: 'blur' }
+        ],
+        password: [
+          { required: true, message: '請輸入用戶密碼', trigger: 'blur' },
+          { min: 6, max: 18, message: '密碼請輸入 6-18 個字之間', trigger: 'blur' }
+        ],
+        email: [
+          { required: true, message: '請輸入電子郵件', trigger: 'blur' },
+          { validator: checkEmail, trigger: 'blur' }
+        ],
+        mobile: [
+          { required: true, message: '請輸入手機號碼', trigger: 'blur' },
+          { validator: checkMobile, trigger: 'blur' }
+        ]
+      }
     }
   },
   created () {
@@ -167,6 +218,33 @@ export default {
         return this.$message.error('刪除用戶失敗！')
       }
       this.$message.success('刪除成功！')
+    },
+    // 監聽添加用戶對話框的關閉事件
+    addDialogClosed () {
+      // clear
+      this.$refs.addFormRef.resetFields()
+    },
+    // 確定添加新用戶事件
+    addUser () {
+      this.$refs.addFormRef.validate(async valid => {
+        if (!valid) return
+
+        // 發起添加用戶的 API 請求
+        await this.$http.post('users', this.addForm)
+        // 取得 API 更新狀態(Fake)
+        const { data: meta } = await this.$http.get('meta', {
+          headers: {
+            'Content-Type': 'application/json, text/plain'
+          }
+        })
+        if (meta.status !== 200) {
+          return this.$message.error('添加用戶失敗！')
+        }
+
+        this.$message.success('添加用戶成功')
+        this.addDialogVisible = false
+        this.getUserList()
+      })
     }
   }
 }
