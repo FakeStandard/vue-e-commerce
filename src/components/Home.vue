@@ -15,7 +15,7 @@
       <!--sidebar-->
       <el-aside :width="isCollapse ? '64px' : '200px'">
         <div class="toggle-button" @click="toggleCollapse">|||</div>
-        <el-menu background-color="#333744" text-color="#fff" active-text-color="#3469b3" unique-opened :collapse="isCollapse" :collapse-transition="false" router>
+        <el-menu background-color="#333744" text-color="#fff" active-text-color="#3469b3" unique-opened :collapse="isCollapse" :collapse-transition="false" router :default-active="$route.path">
             <!--第一層選單-->
           <el-submenu :index="item.id + ''" v-for="item in menulist" :key="item.id">
             <!--第一層選單模板區-->
@@ -75,13 +75,13 @@ export default {
             {
               id: 131,
               authName: '角色列表',
-              path: 'rights',
+              path: 'roles',
               childern: []
             },
             {
               id: 132,
               authName: '權限列表',
-              path: null,
+              path: 'rights',
               childern: []
             }
           ]
@@ -206,7 +206,7 @@ export default {
 }
 
 .el-main {
-  background-color: #c0cdcf;
+  background-color: rgb(220, 224, 218);
 }
 
 .home-container {

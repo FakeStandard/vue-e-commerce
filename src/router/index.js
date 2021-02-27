@@ -3,6 +3,8 @@ import VueRouter from 'vue-router'
 import Login from '@/components/Login.vue'
 import Home from '@/components/Home.vue'
 import Welcome from '@/components/Welcome.vue'
+import Users from '@/components/user/Users.vue'
+import Roles from '@/components/Roles.vue'
 
 // 導入全局樣式
 import '../assets/css/global.css'
@@ -28,6 +30,14 @@ const routes = [
       {
         path: '/welcome',
         component: Welcome
+      },
+      {
+        path: '/users',
+        component: Users
+      },
+      {
+        path: '/roles',
+        component: Roles
       }
     ]
   }
