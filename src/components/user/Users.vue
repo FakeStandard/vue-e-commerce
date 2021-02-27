@@ -38,7 +38,9 @@
         </el-table-column>
         <el-table-column label="操作">
           <template v-slot="scope">
-            <el-button type="primary" icon="el-icon-edit" size="medium"></el-button>
+            <!--modify button-->
+            <el-button type="primary" icon="el-icon-edit" size="medium" @click="showEditDialog(scope.row.id)"></el-button>
+            <!--delete button-->
             <el-button type="danger" icon="el-icon-delete" size="medium" @click="removeUserById(scope.row.id)"></el-button>
             <!--分配角色按鈕-->
             <el-tooltip effect="dark" content="分配角色" placement="right" :enterable="false">
@@ -53,9 +55,9 @@
     </el-card>
 
     <!--Add user dialog-->
-    <el-dialog title="新增用戶" :visible.sync="addDialogVisible" width="40%" @close="addDialogClosed">
+    <el-dialog title="新增用戶資料" :visible.sync="addDialogVisible" width="40%" @close="addDialogClosed">
       <!--Body-->
-      <el-form :model="addForm" :rules="addFormRules" ref="addFormRef" label-width="80px">
+      <el-form :model="addForm" :rules="FormRules" ref="addFormRef" label-width="80px">
         <el-form-item label="用戶名稱" prop="username">
           <el-input v-model="addForm.username"></el-input>
         </el-form-item>
@@ -73,6 +75,27 @@
       <span slot="footer" class="dialog-footer">
         <el-button type="primary" @click="addUser">確 定</el-button>
         <el-button @click="addDialogVisible = false">取 消</el-button>
+      </span>
+    </el-dialog>
+
+    <!--Modify user dialog-->
+    <el-dialog title="修改用戶資料" :visible.sync="editDialogVisible" width="40%" @close="editDialogClosed">
+      <!--Body-->
+      <el-form :model="editForm" :rules="FormRules" ref="editFormRef" label-width="80px">
+        <el-form-item label="用戶名稱">
+          <el-input v-model="editForm.username" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="電子郵件" prop="email">
+          <el-input v-model="editForm.email"></el-input>
+        </el-form-item>
+        <el-form-item label="手機號碼" prop="mobile">
+          <el-input v-model="editForm.mobile"></el-input>
+        </el-form-item>
+      </el-form>
+      <!--Footer(button)-->
+      <span slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="editUser">確 定</el-button>
+        <el-button @click="editDialogVisible = false">取 消</el-button>
       </span>
     </el-dialog>
   </div>
@@ -109,12 +132,14 @@ export default {
       // 添加用戶表單的資料
       addForm: {
         username: '',
-        password: '',
         email: '',
-        mobile: ''
+        mobile: '',
+        role_name: '一般使用者',
+        mg_state: false,
+        password: ''
       },
-      // 添加用戶表單的驗證規則
-      addFormRules: {
+      // 用戶表單的驗證規則
+      FormRules: {
         username: [
           { required: true, message: '請輸入用戶名稱', trigger: 'blur' },
           { min: 3, max: 10, message: '用戶名稱請輸入 3-10 個字', trigger: 'blur' }
@@ -131,7 +156,11 @@ export default {
           { required: true, message: '請輸入手機號碼', trigger: 'blur' },
           { validator: checkMobile, trigger: 'blur' }
         ]
-      }
+      },
+      // 控制修改用戶對話框的顯示與隱藏
+      editDialogVisible: false,
+      // 修改用戶表單的資料
+      editForm: {}
     }
   },
   created () {
@@ -224,7 +253,7 @@ export default {
       // clear
       this.$refs.addFormRef.resetFields()
     },
-    // 確定添加新用戶事件
+    // 點擊按鈕添加用戶事件
     addUser () {
       this.$refs.addFormRef.validate(async valid => {
         if (!valid) return
@@ -244,6 +273,56 @@ export default {
         this.$message.success('添加用戶成功')
         this.addDialogVisible = false
         this.getUserList()
+      })
+    },
+    // 開啟編輯用戶資料對話框
+    async showEditDialog (id) {
+      const { data: user } = await this.$http.get('users', {
+        params: { id: id }
+      })
+      // 取得 API 更新狀態(Fake)
+      const { data: meta } = await this.$http.get('meta', {
+        headers: {
+          'Content-Type': 'application/json, text/plain'
+        }
+      })
+      if (meta.status !== 200) {
+        return this.$message.error('請求用戶資料失敗！')
+      }
+      this.editForm = {
+        id: user[0].id,
+        username: user[0].username,
+        email: user[0].email,
+        mobile: user[0].mobile
+      }
+      this.editDialogVisible = true
+    },
+    // 監聽修改用戶對話框的關閉事件
+    editDialogClosed () {
+      this.$refs.editFormRef.resetFields()
+    },
+    // 點擊按鈕修改用戶事件
+    editUser () {
+      this.$refs.editFormRef.validate(async valid => {
+        if (!valid) return
+        await this.$http.patch(`users/${this.editForm.id}`, {
+          email: this.editForm.email,
+          mobile: this.editForm.mobile
+        })
+
+        // 取得 API 更新狀態(Fake)
+        const { data: meta } = await this.$http.get('meta', {
+          headers: {
+            'Content-Type': 'application/json, text/plain'
+          }
+        })
+        if (meta.status !== 200) {
+          return this.$message.error('修改用戶失敗！')
+        }
+
+        this.editDialogVisible = false
+        this.getUserList()
+        this.$message.success('更新用戶資料成功！')
       })
     }
   }
