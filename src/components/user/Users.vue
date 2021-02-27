@@ -37,9 +37,9 @@
           </template>
         </el-table-column>
         <el-table-column label="操作">
-          <template>
+          <template v-slot="scope">
             <el-button type="primary" icon="el-icon-edit" size="medium"></el-button>
-            <el-button type="danger" icon="el-icon-delete" size="medium"></el-button>
+            <el-button type="danger" icon="el-icon-delete" size="medium" @click="removeUserById(scope.row.id)"></el-button>
             <!--分配角色按鈕-->
             <el-tooltip effect="dark" content="分配角色" placement="right" :enterable="false">
               <el-button type="warning" icon="el-icon-setting" size="medium"></el-button>
@@ -51,6 +51,19 @@
       <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="pagenum" :page-sizes="[1, 2, 5, 10]" :page-size="pagesize" layout="total, sizes, prev, pager, next, jumper" :total="total">
       </el-pagination>
     </el-card>
+
+    <!--add user dialog-->
+    <!-- <el-dialog
+      title="提示"
+      :visible.sync="dialogVisible"
+      width="30%"
+      :before-close="handleClose">
+      <span>这是一段信息</span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="dialogVisible = false">确 定</el-button>
+      </span>
+    </el-dialog> -->
   </div>
 </template>
 
@@ -126,6 +139,34 @@ export default {
       // 尚未實現模糊查詢
       if (this.query.length === 0) return this.$message.warning('請輸入要搜尋的內容！')
       this.getUserList()
+    },
+    // 根據 ID 刪除對應的用戶資料
+    async removeUserById (id) {
+      const confirmResult = await this.$confirm('確定永久刪除該用戶？', '提示', {
+        confirmButtonText: '忍心刪除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).catch(err => err)
+
+      this.getUserList()
+
+      // this.$confirm() 確認會返回 confrim 字串, 取消則返回 cancel 字串
+      if (confirmResult !== 'confirm') {
+        return this.$message.info('已取消刪除')
+      }
+
+      // 確認按鈕請求刪除 API
+      await this.$http.delete(`users/${id}`)
+      // 取得 API 更新狀態(Fake)
+      const { data: meta } = await this.$http.get('meta', {
+        headers: {
+          'Content-Type': 'application/json, text/plain'
+        }
+      })
+      if (meta.status !== 200) {
+        return this.$message.error('刪除用戶失敗！')
+      }
+      this.$message.success('刪除成功！')
     }
   }
 }
