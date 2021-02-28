@@ -17,7 +17,7 @@
           </el-input>
         </el-col>
         <el-col :span="4">
-          <el-button type="primary" @click="addDialogVisible = true">添加用戶</el-button>
+          <el-button type="primary" @click="addDialogVisible = true">新增用戶</el-button>
         </el-col>
       </el-row>
       <!--User list region-->
@@ -228,8 +228,6 @@ export default {
         type: 'warning'
       }).catch(err => err)
 
-      this.getUserList()
-
       // this.$confirm() 確認會返回 confrim 字串, 取消則返回 cancel 字串
       if (confirmResult !== 'confirm') {
         return this.$message.info('已取消刪除')
@@ -246,6 +244,7 @@ export default {
       if (meta.status !== 200) {
         return this.$message.error('刪除用戶失敗！')
       }
+      this.getUserList()
       this.$message.success('刪除成功！')
     },
     // 監聽添加用戶對話框的關閉事件
