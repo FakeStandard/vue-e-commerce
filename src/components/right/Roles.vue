@@ -15,7 +15,29 @@
           </el-col>
         </el-row>
         <el-table :data="rolelist" border stripe>
-          <el-table-column type="expand"></el-table-column>
+          <!--展開列-->
+          <el-table-column type="expand">
+            <template v-slot="scope">
+              <el-row :class="['bdbottom', index1 === 0 ? 'bdtop' : '', 'vcenter']" v-for="(item1, index1) in scope.row.children" :key="item1.id">
+                <el-col :span="5">
+                  <el-tag closable @close="removeRightById(scope.row, item1.id)">{{item1.authName}}</el-tag>
+                  <i class="el-icon-caret-right"></i>
+                </el-col>
+                <el-col :span="19">
+                  <el-row :class="[index2 === 0 ? '' : 'bdtop', 'vcenter']"  v-for="(item2, index2) in item1.children" :key="item2.id">
+                    <el-col :span="6">
+                      <el-tag type="success" closable @close="removeRightById(scope.row, item2.id)">{{item2.authName}}</el-tag>
+                      <i class="el-icon-caret-right"></i>
+                    </el-col>
+                    <el-col :span="18">
+                      <el-tag type="warning" v-for="(item3) in item2.children" :key="item3.id" closable @close="removeRightById(scope.row, item3.id)">{{item3.authName}}</el-tag>
+                    </el-col>
+                  </el-row>
+                </el-col>
+              </el-row>
+            </template>
+          </el-table-column>
+          <!--索引列-->
           <el-table-column type="index"></el-table-column>
           <el-table-column label="角色名稱" prop="roleName"></el-table-column>
           <el-table-column label="角色描述" prop="roleDesc"></el-table-column>
@@ -23,7 +45,7 @@
             <template v-slot="scope">
               <el-button type="primary" icon="el-icon-edit" size="medium" @click="showEditDialog(scope.row.id)">編輯</el-button>
               <el-button type="danger" icon="el-icon-delete" size="medium" @click="removeRoleById(scope.row.id)">刪除</el-button>
-              <el-button type="warning" icon="el-icon-setting" size="medium">分配權限</el-button>
+              <el-button type="warning" icon="el-icon-setting" size="medium" @click="showSetRightDialog">分配權限</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -63,6 +85,17 @@
           <el-button @click="editDialogVisible = false">取消</el-button>
         </span>
       </el-dialog>
+
+      <!--分配權限-->
+      <el-dialog title="分配權限" :visible.sync="setRightDialogVisible" width="40%">
+        <!--tree-->
+        <el-tree :data="rightslist" :props="treeProps" show-checkbox></el-tree>
+        <!--Fotter(Button)-->
+        <span slot="footer" class="dialog-footer">
+          <el-button type="primary" @click="editRole">確定</el-button>
+          <el-button @click="setRightDialogVisible = false">取消</el-button>
+        </span>
+      </el-dialog>
   </div>
 </template>
 
@@ -94,6 +127,15 @@ export default {
       editForm: {
         roleName: '',
         roleDesc: ''
+      },
+      // 控制權限分配對話框的顯示
+      setRightDialogVisible: false,
+      // 所有權限項目
+      rightslist: [],
+      // 樹形控制項的屬性綁定對象
+      treeProps: {
+        label: 'authName',
+        children: 'children'
       }
     }
   },
@@ -218,10 +260,61 @@ export default {
         this.getRolesList()
         this.$message.success('更新角色資料成功！')
       })
+    },
+    // 根據 ID 刪除對應的權限
+    async removeRightById (role, rightId) {
+      const confrimResult = await this.$confirm('是否刪除該權限？', '提示', {
+        confirmButtonText: '確定刪除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).catch(err => err)
+
+      if (confrimResult !== 'confirm') {
+        return this.$message.info('已取消刪除')
+      }
+
+      // 巢狀刪除待研究
+      // const { data: res } = await this.$http.delete('roles/1', {
+      //   params: {
+      //     id: rightId
+      //   }
+      // })
+      // 假裝取得刪除後最新資訊
+      const { data: res } = await this.$http.get('roles', {
+        params: {
+          id: role.id
+        }
+      })
+      role.children = res
+      this.$message.success('刪除成功')
+    },
+    // 開啟分配權限的對話框
+    async showSetRightDialog () {
+      this.setRightDialogVisible = true
+
+      // 取得所有權限項目
+      const { data: right } = await this.$http.get('rights')
+
+      this.rightslist = right
+
+      console.log(right)
     }
   }
 }
 </script>
 
 <style scoped>
+.el-tag {
+  margin: 7px;
+}
+.bdtop {
+  border-top: 1px solid #eee;
+}
+.bdbottom {
+  border-bottom: 1px solid #eee;
+}
+.vcenter {
+  display:flex;
+  align-items: center;
+}
 </style>
