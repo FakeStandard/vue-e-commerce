@@ -45,7 +45,7 @@
             <template v-slot="scope">
               <el-button type="primary" icon="el-icon-edit" size="medium" @click="showEditDialog(scope.row.id)">編輯</el-button>
               <el-button type="danger" icon="el-icon-delete" size="medium" @click="removeRoleById(scope.row.id)">刪除</el-button>
-              <el-button type="warning" icon="el-icon-setting" size="medium" @click="showSetRightDialog">分配權限</el-button>
+              <el-button type="warning" icon="el-icon-setting" size="medium" @click="showSetRightDialog(scope.row)">分配權限</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -87,12 +87,12 @@
       </el-dialog>
 
       <!--分配權限-->
-      <el-dialog title="分配權限" :visible.sync="setRightDialogVisible" width="40%">
+      <el-dialog title="分配權限" :visible.sync="setRightDialogVisible" width="40%" @close="setRightDialogClosed">
         <!--tree-->
-        <el-tree :data="rightslist" :props="treeProps" show-checkbox></el-tree>
+        <el-tree :data="rightslist" :props="treeProps" show-checkbox node-key="id" default-expand-all :default-checked-keys="defKeys" ref="treeRef"></el-tree>
         <!--Fotter(Button)-->
         <span slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="editRole">確定</el-button>
+          <el-button type="primary" @click="allotRights">確定</el-button>
           <el-button @click="setRightDialogVisible = false">取消</el-button>
         </span>
       </el-dialog>
@@ -108,10 +108,7 @@ export default {
       // 控制新增角色對話框顯示狀況
       addDialogVisible: false,
       // 新增角色表單資料
-      addForm: {
-        roleName: '',
-        roleDesc: ''
-      },
+      addForm: {},
       // 角色表單的驗證規則
       FormRules: {
         roleName: [
@@ -124,10 +121,7 @@ export default {
       // 控制編輯角色對話框顯示狀況
       editDialogVisible: false,
       // 修改角色表單資料
-      editForm: {
-        roleName: '',
-        roleDesc: ''
-      },
+      editForm: {},
       // 控制權限分配對話框的顯示
       setRightDialogVisible: false,
       // 所有權限項目
@@ -136,7 +130,11 @@ export default {
       treeProps: {
         label: 'authName',
         children: 'children'
-      }
+      },
+      // 默認勾選節點 ID
+      defKeys: [],
+      // 當前開啟分配權限對話框的 ID
+      roleId: ''
     }
   },
   created () {
@@ -145,16 +143,11 @@ export default {
   methods: {
     // 取得角色所有資料
     async getRolesList () {
-      // 驗證 API 資料已取得連線(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
-      })
-      if (meta.status !== 200) return this.$message.error('獲取角色列表失敗！')
       // 取得 API 資料
-      const { data: role } = await this.$http.get('roles')
-      this.rolelist = role
+      const { data: roles } = await this.$http.get('role').catch(() => {
+        return this.$message.error('獲取角色列表失敗')
+      })
+      this.rolelist = roles
     },
     // 根據 ID 刪除對應的角色資料
     async removeRoleById (id) {
@@ -169,20 +162,13 @@ export default {
         return this.$message.info('已取消刪除')
       }
 
-      // 確認按鈕請求刪除 API
-      await this.$http.delete(`roles/${id}`)
-      // 取得 API 更新狀態(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
+      // 請求刪除 API
+      await this.$http.delete(`role/${id}`).then(() => {
+        this.getRolesList()
+        this.$message.success('刪除成功')
+      }).catch(() => {
+        return this.$message.error('刪除用戶失敗')
       })
-      if (meta.status !== 200) {
-        return this.$message.error('刪除用戶失敗！')
-      }
-
-      this.getRolesList()
-      this.$message.success('刪除成功！')
     },
     // 關閉新增角色對話框
     addDialogClosed () {
@@ -194,43 +180,24 @@ export default {
         if (!valid) return
 
         // 發起新增角色 API 請求
-        await this.$http.post('roles', this.addForm)
-        // 取得 API 更新狀態(Fake)
-        const { data: meta } = await this.$http.get('meta', {
-          headers: {
-            'Content-Type': 'application/json, text/plain'
-          }
+        await this.$http.post('role', this.addForm).then(() => {
+          this.$message.success('新增角色成功')
+          this.addDialogVisible = false
+          this.getRolesList()
+        }).catch(() => {
+          return this.$message.error('新增角色失敗')
         })
-        if (meta.status !== 200) {
-          return this.$message.error('新增角色失敗！')
-        }
-
-        this.$message.success('新增角色成功')
-        this.addDialogVisible = false
-        this.getRolesList()
       })
     },
     // 顯示修改角色對話框
     async showEditDialog (id) {
       // 取得角色資料
-      const { data: role } = await this.$http.get('roles', {
-        params: { id: id }
+      await this.$http.get(`role/${id}`).then((res) => {
+        this.editDialogVisible = true
+        this.editForm = res.data
+      }).catch(() => {
+        return this.$message.error('請求用戶資料失敗')
       })
-      // 取得 API 更新狀態(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
-      })
-      if (meta.status !== 200) {
-        return this.$message.error('請求用戶資料失敗！')
-      }
-      this.editForm = {
-        id: role[0].id,
-        roleName: role[0].roleName,
-        roleDesc: role[0].roleDesc
-      }
-      this.editDialogVisible = true
     },
     // 關閉編輯角色對話框
     editDialogClosed () {
@@ -241,24 +208,13 @@ export default {
       this.$refs.editFormRef.validate(async valid => {
         if (!valid) return
 
-        await this.$http.patch(`roles/${this.editForm.id}`, {
-          roleName: this.editForm.roleName,
-          roleDesc: this.editForm.roleDesc
+        await this.$http.put('role', this.editForm).then(() => {
+          this.editDialogVisible = false
+          this.getRolesList()
+          this.$message.success('更新角色資料成功')
+        }).catch(() => {
+          return this.$message.error('修改用戶失敗')
         })
-
-        // 取得 API 更新狀態(Fake)
-        const { data: meta } = await this.$http.get('meta', {
-          headers: {
-            'Content-Type': 'application/json, text/plain'
-          }
-        })
-        if (meta.status !== 200) {
-          return this.$message.error('修改用戶失敗！')
-        }
-
-        this.editDialogVisible = false
-        this.getRolesList()
-        this.$message.success('更新角色資料成功！')
       })
     },
     // 根據 ID 刪除對應的權限
@@ -273,31 +229,66 @@ export default {
         return this.$message.info('已取消刪除')
       }
 
-      // 巢狀刪除待研究
-      // const { data: res } = await this.$http.delete('roles/1', {
-      //   params: {
-      //     id: rightId
-      //   }
-      // })
-      // 假裝取得刪除後最新資訊
-      const { data: res } = await this.$http.get('roles', {
-        params: {
-          id: role.id
-        }
+      await this.$http.delete(`role/${role.id}/${rightId}`).then((res) => {
+        role.children = res.data
+        this.$message.success('刪除成功')
+      }).catch(() => {
+        this.$message.error('刪除失敗')
       })
-      role.children = res
-      this.$message.success('刪除成功')
     },
     // 開啟分配權限的對話框
-    async showSetRightDialog () {
+    async showSetRightDialog (role) {
+      this.roleId = role.id
       this.setRightDialogVisible = true
-
       // 取得所有權限項目
-      const { data: right } = await this.$http.get('rights')
+      await this.$http.get('right/tree').then((res) => {
+        this.rightslist = res.data
+        // 遞迴取得三級節點 ID
+        this.getLeafKeys(role, this.defKeys)
+        this.setRightDialogVisible = true
+      }).catch(() => {
+        this.$message.error('取得角色權限列表失敗')
+      })
+    },
+    // 通過遞迴取得所有三級權限的 ID，並保存到 defKeys[]
+    getLeafKeys (node, arr) {
+      // 若當前 node 節點不包含 children 屬性，則為三級節點
+      if (!node.children) {
+        return arr.push(node.id)
+      }
 
-      this.rightslist = right
+      // 若當前 node 節點非三級節點，則使用遞迴找出三級節點
+      node.children.forEach(item => this.getLeafKeys(item, arr))
+    },
+    // 監聽分配權限對話框的關閉事件
+    setRightDialogClosed () {
+      this.defKeys = []
+    },
+    // 分配權限確定事件
+    async allotRights () {
+      // 取得所有的 Key
+      const keys = [
+        ...this.$refs.treeRef.getCheckedKeys(),
+        ...this.$refs.treeRef.getHalfCheckedKeys()
+      ]
 
-      console.log(right)
+      if (keys !== null) {
+        const idStr = keys.join(',')
+        await this.$http.post(`role/${this.roleId}/${idStr}`).then(() => {
+          this.getRolesList()
+          this.setRightDialogVisible = false
+          this.$message.success('分配權限成功')
+        }).catch((err) => {
+          console.log(err)
+          this.$message.error('分配權限失敗')
+        })
+      } else {
+        await this.$http.post(`role/${this.roleId}`).then(() => {
+          this.$message.success('分配權限成功')
+        }).catch(() => {
+          this.$message.error('分配權限失敗')
+        })
+      }
     }
   }
 }

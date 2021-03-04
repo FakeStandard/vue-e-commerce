@@ -2,8 +2,8 @@
 使用前後端分離開發模式來 Vue 出一個電商
 
 :rocket: Technology <br>
-Front end：Vue、Vue-router、Element-UI、Axios、Echarts <br>
-Back end：Node.js、Express、Jwt、MySql、Sequelize <br>
+Front end：Vue、Vue-router、Element-UI、Axios、~~Echarts~~ <br>
+Back end：~~Node.js~~、~~Express~~、~~Jwt~~、~~MySql~~、~~Sequelize~~、MSSQL、.NET Core Web API<br>
 
 # History
 | Date | Description |
@@ -13,6 +13,7 @@ Back end：Node.js、Express、Jwt、MySql、Sequelize <br>
 | 2021/2/26 | 製作主頁面框架及設置路由位置 |
 | 2021/2/27 | 添加用戶列表的增刪修及分頁實現 |
 | 2021/2/28 | 完成權限列表、添加角色列表的增刪修 |
+| 2021/3/4 | 角色分配權限、用戶角色的分配 <br> 建立 MSSQL 資料庫 <br> 建立 .NET Core Web API 供專案使用 <br> JSON DATA 改為 Call Web API |
 
 # Tree
 - 電商後台管理系統

@@ -72,28 +72,20 @@ export default {
       this.$refs.loginFormRef.validate(async (valid) => {
         // console.log(valid)
         if (!valid) return this.$message.error('驗證失敗')
-        // 待 API 寫好再串接起來
-        // const { data: res } = await this.$http.post('users', this.loginForm)
-        // console.log(res)
-        // if (res.meta.status !== 200) return this.$message.error('登入失敗')
-        // this.$message.success('登入成功')
-        if (
-          !(
-            (this.loginForm.username === 'admin') &
-            (this.loginForm.password === '1234')
-          )
-        ) {
-          return this.$message.error('登入失敗！')
-        }
-        // this.$message.success('登入成功！')
-        this.$message.success('登入成功')
-        // 1. 將登入成功後的 token，保存到客戶端的 sessionStorage 中
-        //   1.1 除了登入之外的其他 API 接口，必須在登入之後才能訪問
-        //   1.2 token 只在當前網站打開期間生效，所以將 token 保存在 sessionStorage
-        // window.sessionStorage.setItem('token', res.data.token)
-        window.sessionStorage.setItem('token', 'tokenkey')
-        // 2. 通過城市導航跳轉到後台主頁，路由位址是 /home
-        this.$router.push('/home')
+        // 請求 API 驗證用戶帳號密碼
+        await this.$http.post('login', this.loginForm).then((res) => {
+          this.$message.success('登入成功')
+
+          // 1. 將登入成功後的 token，保存到客戶端的 sessionStorage 中
+          //   1.1 除了登入之外的其他 API 接口，必須在登入之後才能訪問
+          //   1.2 token 只在當前網站打開期間生效，所以將 token 保存在 sessionStorage
+          // window.sessionStorage.setItem('token', res.data.token)
+          window.sessionStorage.setItem('token', 'tokenkey')
+          // 2. 通過城市導航跳轉到後台主頁，路由位址是 /home
+          this.$router.push('/home')
+        }).catch(() => {
+          return this.$message.error('登入失敗')
+        })
       })
     }
   }

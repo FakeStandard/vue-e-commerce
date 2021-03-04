@@ -27,7 +27,7 @@
             </template>
 
             <!--第二層選單-->
-            <el-menu-item :index="'/' + subItem.path" v-for="subItem in item.childern" :key="subItem.id">
+            <el-menu-item :index="'/' + subItem.path" v-for="subItem in item.children" :key="subItem.id">
               <!--第二層選單模板區-->
               <template slot="title">
               <!--icon-->
@@ -81,20 +81,11 @@ export default {
     },
     // 取得所有選單
     async getMenuList () {
-      // 驗證API資料已取得連線(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
-      })
-      if (meta.status !== 200) return this.$message.error(meta.msg)
-      // 取得 API 資料
       const { data: menu } = await this.$http.get('menu', {
         headers: {
           'Content-Type': 'application/json, text/plain'
         }
       })
-      // console.log(res)
       this.menulist = menu
     },
     // 點擊按鈕，切換選單折疊

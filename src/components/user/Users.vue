@@ -13,7 +13,7 @@
       <el-row :gutter="20">
         <el-col :span="7">
           <el-input v-model="query" placeholder="請輸入搜尋內容" clearable @click="getUserList">
-            <el-button slot="append" icon="el-icon-search" @click="textclick"></el-button>
+            <el-button slot="append" icon="el-icon-search" @click="queryClick"></el-button>
           </el-input>
         </el-col>
         <el-col :span="4">
@@ -24,15 +24,16 @@
       <!--.slice(開始的索引值, 結束的索引值)-->
       <el-table :data="userlist.slice((pagenum -1) * pagesize, pagenum * pagesize)" border stripe>
         <el-table-column type="index"></el-table-column>
-        <el-table-column label="姓名" prop="username"></el-table-column>
+        <el-table-column label="姓名" prop="name"></el-table-column>
+        <el-table-column label="帳號" prop="account"></el-table-column>
         <el-table-column label="電子郵件" prop="email"></el-table-column>
         <el-table-column label="電話" prop="mobile"></el-table-column>
-        <el-table-column label="角色" prop="role_name"></el-table-column>
-        <el-table-column label="狀態" prop="mg_state">
+        <el-table-column label="角色" prop="roleName"></el-table-column>
+        <el-table-column label="狀態" prop="state">
           <!-- <template slot-scope="scope"> -->
           <!--v2.6 語法-->
           <template v-slot="scope">
-            <el-switch v-model="scope.row.mg_state" @change="userStateChanged(scope.row)"></el-switch>
+            <el-switch v-model="scope.row.state" @change="userStateChanged(scope.row)"></el-switch>
             <!-- {{scope.row}} -->
           </template>
         </el-table-column>
@@ -44,7 +45,7 @@
             <el-button type="danger" icon="el-icon-delete" size="medium" @click="removeUserById(scope.row.id)"></el-button>
             <!--分配角色按鈕-->
             <el-tooltip effect="dark" content="分配角色" placement="right" :enterable="false">
-              <el-button type="warning" icon="el-icon-setting" size="medium"></el-button>
+              <el-button type="warning" icon="el-icon-setting" size="medium" @click="setRole(scope.row)"></el-button>
             </el-tooltip>
           </template>
         </el-table-column>
@@ -58,8 +59,11 @@
     <el-dialog title="新增用戶資料" :visible.sync="addDialogVisible" width="40%" @close="addDialogClosed">
       <!--Body-->
       <el-form :model="addForm" :rules="FormRules" ref="addFormRef" label-width="80px">
-        <el-form-item label="用戶名稱" prop="username">
-          <el-input v-model="addForm.username"></el-input>
+        <el-form-item label="用戶名稱" prop="name">
+          <el-input v-model="addForm.name"></el-input>
+        </el-form-item>
+        <el-form-item label="帳號" prop="account">
+          <el-input v-model="addForm.account"></el-input>
         </el-form-item>
         <el-form-item label="密碼" prop="password">
           <el-input v-model="addForm.password" type="password"></el-input>
@@ -83,7 +87,7 @@
       <!--Body-->
       <el-form :model="editForm" :rules="FormRules" ref="editFormRef" label-width="80px">
         <el-form-item label="用戶名稱">
-          <el-input v-model="editForm.username" disabled></el-input>
+          <el-input v-model="editForm.name" disabled></el-input>
         </el-form-item>
         <el-form-item label="電子郵件" prop="email">
           <el-input v-model="editForm.email"></el-input>
@@ -96,6 +100,24 @@
       <span slot="footer" class="dialog-footer">
         <el-button type="primary" @click="editUser">確 定</el-button>
         <el-button @click="editDialogVisible = false">取 消</el-button>
+      </span>
+    </el-dialog>
+
+    <!--分配角色權限-->
+    <el-dialog title="分配角色" :visible.sync="setRoleDialogVisible" width="40%" @close="setRoleDialogClosed">
+      <div>
+        <p>當前的用戶：{{userInfo.name}}</p>
+        <p>當前的角色：{{userInfo.roleName}}</p>
+        <p>分配新角色：
+          <el-select v-model="selectedRoleId" placeholder="請選擇">
+            <el-option v-for="item in rolesList" :key="item.id" :label="item.roleName" :value="item.id"></el-option>
+          </el-select>
+        </p>
+      </div>
+      <!--Footer(button)-->
+      <span slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="saveRoleInfo">確 定</el-button>
+        <el-button @click="setRoleDialogVisible = false">取 消</el-button>
       </span>
     </el-dialog>
   </div>
@@ -116,6 +138,12 @@ export default {
       if (regMobile.test(value)) return cb()
       cb(new Error('請輸入合法的手機號碼'))
     }
+    // 驗證帳號和密碼規則
+    var checkAccPass = (rule, value, cb) => {
+      const regAccount = /^.[A-Za-z0-9]+$/
+      if (regAccount.test(value)) return cb()
+      cb(new Error('請輸入數字或英文'))
+    }
     return {
       // 用戶列表數據
       userlist: [],
@@ -130,23 +158,22 @@ export default {
       // 控制添加用戶對話框的顯示與隱藏
       addDialogVisible: false,
       // 添加用戶表單的資料
-      addForm: {
-        username: '',
-        email: '',
-        mobile: '',
-        role_name: '一般使用者',
-        mg_state: false,
-        password: ''
-      },
+      addForm: {},
       // 用戶表單的驗證規則
       FormRules: {
-        username: [
+        name: [
           { required: true, message: '請輸入用戶名稱', trigger: 'blur' },
           { min: 3, max: 10, message: '用戶名稱請輸入 3-10 個字', trigger: 'blur' }
         ],
+        account: [
+          { required: true, message: '請輸入用戶帳號', trigger: 'blur' },
+          { min: 4, maxi: 16, message: '帳號請輸入 4-16 個字之間', trigger: 'blur' },
+          { validator: checkAccPass, trigger: 'blur' }
+        ],
         password: [
           { required: true, message: '請輸入用戶密碼', trigger: 'blur' },
-          { min: 6, max: 18, message: '密碼請輸入 6-18 個字之間', trigger: 'blur' }
+          { min: 6, max: 18, message: '密碼請輸入 6-18 個字之間', trigger: 'blur' },
+          { validator: checkAccPass, trigger: 'blur' }
         ],
         email: [
           { required: true, message: '請輸入電子郵件', trigger: 'blur' },
@@ -160,7 +187,15 @@ export default {
       // 控制修改用戶對話框的顯示與隱藏
       editDialogVisible: false,
       // 修改用戶表單的資料
-      editForm: {}
+      editForm: {},
+      // 分配權限對話框的顯示與隱藏
+      setRoleDialogVisible: false,
+      // 需要被分配角色的用戶資訊
+      userInfo: {},
+      // 所有角色數據列表
+      rolesList: [],
+      // 已選中角色 ID 值
+      selectedRoleId: ''
     }
   },
   created () {
@@ -169,20 +204,9 @@ export default {
   methods: {
     // 取得所有用戶列表
     async getUserList () {
-      // 驗證 API 資料已取得連線(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
-      })
-      if (meta.status !== 200) return this.$message.error(meta.msg)
-      // 取得 API 資料
-      const { data: users } = await this.$http.get('users', {
+      const { data: users } = await this.$http.get('user', {
         params: {
-          username: this.query.length === 0 ? null : this.query
-        },
-        headers: {
-          'Content-Type': 'application/json, text/plain'
+          query: this.query.length === 0 ? null : this.query
         }
       })
       this.userlist = users
@@ -200,24 +224,15 @@ export default {
     },
     // 監聽 switch 開關狀態改變事件
     async userStateChanged (userinfo) {
-      await this.$http.patch(`users/${userinfo.id}`, {
-        mg_state: userinfo.mg_state
+      await this.$http.patch(`user/${userinfo.id}/${userinfo.state}`).then(() => {
+        this.$message.success('更新用戶狀態成功')
+        this.getUserList()
+      }).catch(() => {
+        return this.$message.error('更新用戶狀態失敗')
       })
-      // 取得 API 更新狀態(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
-      })
-      if (meta.status !== 200) {
-        userinfo.mg_state = !userinfo.mg_state
-        return this.$message.error('更新用戶狀態失敗！')
-      }
-      this.$message.success('更新用戶狀態成功！')
     },
-    textclick () {
-      // 尚未實現模糊查詢
-      if (this.query.length === 0) return this.$message.warning('請輸入要搜尋的內容！')
+    // 監聽查詢按鈕事件
+    queryClick () {
       this.getUserList()
     },
     // 根據 ID 刪除對應的用戶資料
@@ -234,18 +249,12 @@ export default {
       }
 
       // 確認按鈕請求刪除 API
-      await this.$http.delete(`users/${id}`)
-      // 取得 API 更新狀態(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
+      await this.$http.delete(`user/${id}`).then(() => {
+        this.$message.success('刪除用戶成功')
+        this.getUserList()
+      }).catch(() => {
+        this.$message.error('刪除用戶失敗')
       })
-      if (meta.status !== 200) {
-        return this.$message.error('刪除用戶失敗！')
-      }
-      this.getUserList()
-      this.$message.success('刪除成功！')
     },
     // 監聽添加用戶對話框的關閉事件
     addDialogClosed () {
@@ -257,43 +266,24 @@ export default {
       this.$refs.addFormRef.validate(async valid => {
         if (!valid) return
 
-        // 發起添加用戶的 API 請求
-        await this.$http.post('users', this.addForm)
-        // 取得 API 更新狀態(Fake)
-        const { data: meta } = await this.$http.get('meta', {
-          headers: {
-            'Content-Type': 'application/json, text/plain'
-          }
+        // 發起新增用戶的 API 請求
+        await this.$http.post('user', this.addForm).then(() => {
+          this.$message.success('添加用戶成功')
+          this.addDialogVisible = false
+          this.getUserList()
+        }).catch(() => {
+          return this.$message.error('添加用戶失敗')
         })
-        if (meta.status !== 200) {
-          return this.$message.error('添加用戶失敗！')
-        }
-
-        this.$message.success('添加用戶成功')
-        this.addDialogVisible = false
-        this.getUserList()
       })
     },
     // 開啟編輯用戶資料對話框
     async showEditDialog (id) {
-      const { data: user } = await this.$http.get('users', {
-        params: { id: id }
+      // 請求用戶資料
+      const { data: user } = await this.$http.get(`user/${id}`).catch(() => {
+        return this.$message.error('請求用戶資料失敗')
       })
-      // 取得 API 更新狀態(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
-      })
-      if (meta.status !== 200) {
-        return this.$message.error('請求用戶資料失敗！')
-      }
-      this.editForm = {
-        id: user[0].id,
-        username: user[0].username,
-        email: user[0].email,
-        mobile: user[0].mobile
-      }
+
+      this.editForm = user
       this.editDialogVisible = true
     },
     // 監聽修改用戶對話框的關閉事件
@@ -304,25 +294,44 @@ export default {
     editUser () {
       this.$refs.editFormRef.validate(async valid => {
         if (!valid) return
-        await this.$http.patch(`users/${this.editForm.id}`, {
-          email: this.editForm.email,
-          mobile: this.editForm.mobile
+        await this.$http.put('user', this.editForm).then(() => {
+          this.editDialogVisible = false
+          this.getUserList()
+          this.$message.success('更新用戶資料成功')
+        }).catch(() => {
+          return this.$message.error('修改用戶失敗')
         })
-
-        // 取得 API 更新狀態(Fake)
-        const { data: meta } = await this.$http.get('meta', {
-          headers: {
-            'Content-Type': 'application/json, text/plain'
-          }
-        })
-        if (meta.status !== 200) {
-          return this.$message.error('修改用戶失敗！')
-        }
-
-        this.editDialogVisible = false
-        this.getUserList()
-        this.$message.success('更新用戶資料成功！')
       })
+    },
+    // 展示分配角色對話框
+    async setRole (userInfo) {
+      this.userInfo = userInfo
+      // 取得所有角色列表
+      await this.$http.get('role').then((res) => {
+        this.rolesList = res.data
+        this.setRoleDialogVisible = true
+      }).catch(() => {
+        return this.$message.error('取得角色列表失敗')
+      })
+    },
+    // 點擊按鈕分配角色
+    async saveRoleInfo () {
+      if (!this.selectedRoleId) {
+        return this.$message.error('請選擇要分配的角色')
+      }
+
+      await this.$http.patch(`user/${this.userInfo.id}/role/${this.selectedRoleId}`).then(() => {
+        this.$message.success('成功')
+        this.getUserList()
+        this.setRoleDialogVisible = false
+      }).catch(() => {
+        this.$message.error('失敗')
+      })
+    },
+    // 監聽分配角色對話框關閉事件
+    setRoleDialogClosed () {
+      this.selectedRoleId = ''
+      this.userInfo = []
     }
   }
 }

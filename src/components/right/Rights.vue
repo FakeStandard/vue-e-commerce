@@ -40,16 +40,11 @@ export default {
   methods: {
     // 獲取權限列表
     async getRightsList () {
-      // 驗證 API 資料已取得連線(Fake)
-      const { data: meta } = await this.$http.get('meta', {
-        headers: {
-          'Content-Type': 'application/json, text/plain'
-        }
+      const { data: rights } = await this.$http.get('right').catch(() => {
+        return this.$message.error('獲取權限列表失敗')
       })
-      if (meta.status !== 200) return this.$message.error('獲取權限列表失敗！')
-      // 取得 API 資料
-      const { data: res } = await this.$http.get('rights')
-      this.rightsList = res
+
+      this.rightsList = rights
     }
   }
 }
