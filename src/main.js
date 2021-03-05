@@ -3,6 +3,9 @@ import App from './App.vue'
 import './plugins/element.js'
 import router from './router'
 
+// 導入套件
+import TreeTable from 'vue-table-with-tree-grid'
+
 import axios from 'axios'
 // 配置 API 請求根路徑
 // axios.defaults.baseURL = 'http://localhost:3000/'
@@ -18,6 +21,9 @@ axios.interceptors.request.use(config => {
 Vue.prototype.$http = axios
 
 Vue.config.productionTip = false
+
+// 註冊為全局可用的套件
+Vue.component('tree-table', TreeTable)
 
 new Vue({
   router,
