@@ -1,5 +1,5 @@
 # Vue-E-Commerce
-使用前後端分離開發模式來 Vue 出一個電商
+使用前後端分離開發模式來 Vue 出一個電商後台管理系統
 
 :rocket: Technology <br>
 Front end：Vue、Vue-router、Element-UI、Axios、~~Echarts~~、Vue-table-with-tree-grid <br>
