@@ -14,7 +14,8 @@ Back end：~~Node.js~~、~~Express~~、~~Jwt~~、~~MySql~~、~~Sequelize~~、MSS
 | 2021/2/27 | 添加用戶列表的增刪修及分頁實現 |
 | 2021/2/28 | 完成權限列表、添加角色列表的增刪修 |
 | 2021/3/4 | 角色分配權限、用戶角色的分配 <br> 建立 MSSQL 資料庫 <br> 建立 .NET Core Web API 供專案使用 <br> JSON DATA 改為 Call Web API |
-| 2021/3/5 | 完成商品管理之商品分類、添加 vue-table-with-tree-grid 套件
+| 2021/3/5 | 完成商品管理之商品分類、添加 vue-table-with-tree-grid 套件 |
+| 2021/3/6 | 分類參數 CRUD 操作功能 |
 
 # Tree
 - 電商後台管理系統
