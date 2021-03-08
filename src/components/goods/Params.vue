@@ -25,7 +25,16 @@
             <el-button type="primary" :disabled="isBtnDisabled" @click="addDialogVisible = true">新增參數</el-button>
             <!--動態參數表格-->
             <el-table :data="manyTableData" border stripe>
-              <el-table-column type="expand"></el-table-column>
+              <el-table-column type="expand">
+                <template slot-scope="scope">
+                  <!--循環渲染 Tag 標籤-->
+                  <el-tag v-for="(item, index) in scope.row.attrVals" :key="item.id" closable @close="handleClose(index, item.id, scope.row)">{{item.name}}</el-tag>
+                  <!--輸入 Tag 文本框-->
+                  <el-input class="input-new-tag" v-if="scope.row.inputVisible" v-model="scope.row.inputValue" ref="saveTagInput" @keyup.enter.native="handleInputConfirm(scope.row)" @blur="handleInputConfirm(scope.row)" size="small"></el-input>
+                  <!--新增 Tag 按鈕-->
+                  <el-button v-else class="button-new-tag" size="small" @click="showInput(scope.row)">+ New Tag</el-button>
+                </template>
+              </el-table-column>
               <el-table-column type="index"></el-table-column>
               <el-table-column label="參數名稱" prop="attrName"></el-table-column>
               <el-table-column label="操作">
@@ -41,7 +50,16 @@
             <el-button type="primary" :disabled="isBtnDisabled" @click="addDialogVisible = true">新增屬性</el-button>
             <!--靜態屬性表格-->
             <el-table :data="onlyTableData" border stripe>
-              <el-table-column type="expand"></el-table-column>
+              <el-table-column type="expand">
+                <template slot-scope="scope">
+                  <!--循環渲染 Tag 標籤-->
+                  <el-tag v-for="(item, index) in scope.row.attrVals" :key="item.id" closable @close="handleClose(index, item.id, scope.row)">{{item.name}}</el-tag>
+                  <!--輸入 Tag 文本框-->
+                  <el-input class="input-new-tag" v-if="scope.row.inputVisible" v-model="scope.row.inputValue" ref="saveTagInput" @keyup.enter.native="handleInputConfirm(scope.row)" @blur="handleInputConfirm(scope.row)" size="small"></el-input>
+                  <!--新增 Tag 按鈕-->
+                  <el-button v-else class="button-new-tag" size="small" @click="showInput(scope.row)">+ New Tag</el-button>
+                </template>
+              </el-table-column>
               <el-table-column type="index"></el-table-column>
               <el-table-column label="屬性名稱" prop="attrName"></el-table-column>
               <el-table-column label="操作">
@@ -146,6 +164,11 @@ export default {
       if (this.selectedCateKeys.length !== 0) {
         // 根據所選分類 ID 和當前所處面板，獲取對應的參數
         await this.$http.get(`params/${this.cateId}/${this.activeName}`).then((res) => {
+          res.data.forEach(item => {
+            // 控制 Tag 文本框顯示與隱藏
+            item.inputVisible = false
+            item.inputValue = ''
+          })
           if (this.activeName === 'many') {
             this.manyTableData = res.data
           } else {
@@ -154,6 +177,10 @@ export default {
         }).catch(() => {
           this.$message.error('獲取參數列表失敗')
         })
+      } else {
+        this.selectedCateKeys = []
+        this.manyTableData = []
+        this.onlyTableData = []
       }
     },
     // 監聽新增對話框關閉事件
@@ -223,6 +250,41 @@ export default {
       }).catch(() => {
         this.$message.error('刪除分類參數失敗')
       })
+    },
+    // 文本框輸入焦點或和按下 Enter 觸發事件
+    async handleInputConfirm (row) {
+      if (row.inputValue.trim().length === 0) {
+        row.inputVisible = false
+        row.inputValue = ''
+      } else {
+        // 發起 API 請求
+        await this.$http.post('params/tag', { Name: row.inputValue.trim(), ParamsID: row.id }).then((res) => {
+          row.attrVals.push({ id: res.data, name: row.inputValue.trim(), paramsId: row.id })
+          row.inputValue = ''
+          row.inputVisible = false
+        }).catch(() => {
+          this.$message.error('建立參數標籤失敗')
+        })
+      }
+    },
+    // 點籍按鈕展示文本輸入框
+    showInput (row) {
+      row.inputVisible = true
+      // 讓文本框自動獲得焦點
+      // $nextTick 方法的作用為當頁面上元素被重新渲染之後，才指定回傳函數中的代碼
+      this.$nextTick(_ => {
+        this.$refs.saveTagInput.$refs.input.focus()
+      })
+    },
+    // 刪除對應的參數標籤
+    async handleClose (index, id, row) {
+      await this.$http.delete(`params/tag/${id}`).then(() => {
+        row.attrVals.splice(index, 1)
+        row.inputValue = ''
+        row.inputVisible = false
+      }).catch(() => {
+        this.$.message.error('刪除參數標籤成功')
+      })
     }
   },
   // 計算屬性
@@ -257,10 +319,25 @@ export default {
 
 <style scoped>
 .cat_opt {
-    margin: 15px 0;
+  margin: 15px 0;
 }
 .el-cascader {
-    margin-left: 15px;
-    width: 40%;
+  margin-left: 15px;
+  width: 40%;
+}
+.el-tag {
+  margin-right: 10px;
+  margin-top: 10px;
+}
+.input-new-tag {
+  width: 120px;
+}
+.button-new-tag {
+  margin-top: 10px;
+  margin-right: 10px;
+}
+.input-new-tag {
+  margin-top: 10px;
+  margin-right: 10px;
 }
 </style>
